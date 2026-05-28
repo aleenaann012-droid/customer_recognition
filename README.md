@@ -1,163 +1,71 @@
-
 Smart Customer Recognition & Analytics System
 
-AI-powered retail customer analytics system using Face Recognition, Age Detection, and Realtime Monitoring.
+An AI-powered retail analytics system that uses realtime face recognition and demographic analysis to identify repeat customers, distinguish staff members from visitors, and generate customer insights for smart retail environments.
 
-📌 Project Overview
+Overview
 
-This project is a realtime computer vision system designed for retail shops and stores.
-The system uses AI-powered face detection and recognition to:
+This project is designed for retail stores and smart shop environments where customer behavior and demographics can help improve business decisions. The system uses computer vision and deep learning techniques to monitor customers through entry and exit cameras.
 
-Detect customers entering/exiting the shop
-Recognize repeat customers
-Differentiate staff and customers
-Estimate customer age groups
-Generate customer analytics for business insights
+The application performs:
 
-The project uses:
+Face detection
+Face recognition
+Staff identification
+Customer visit tracking
+Age estimation
+Customer analytics generation
 
+The system automatically recognizes returning customers using facial embeddings while excluding registered staff members from analytics.
+
+Features
+Realtime face detection
+Realtime face recognition
+Staff and customer separation
+Repeat customer identification
+Automatic customer ID generation
+Age estimation using AI
+Visit count tracking
+Customer demographic analytics
+Entry and exit monitoring
+Local database storage
+Technologies Used
+Programming Language
 Python
+Computer Vision & AI
 OpenCV
 InsightFace (ArcFace)
 RetinaFace
+ONNX Runtime
+Database
 SQLite
-🚀 Features
-✅ Face Detection
+Libraries
+NumPy
+Pandas
+System Workflow
+Capture live video from cameras
+Detect faces in realtime
+Generate face embeddings
+Compare embeddings with registered staff database
+If matched:
+Mark as staff
+Exclude from customer analytics
+If not matched:
+Compare with existing customer database
+Identify returning customer or create new customer profile
+Predict customer age
+Store analytics in database
+Staff and Customer Logic
+Registered Staff
 
-Detects human faces from live camera feed.
+Staff members are registered manually before system deployment. Their facial embeddings are stored separately and excluded from customer statistics.
 
-✅ Face Recognition
+Unregistered Customers
 
-Recognizes returning customers using facial embeddings.
+Customers are automatically assigned unique customer IDs. Their embeddings are stored and used for identifying repeat visits in future sessions.
 
-✅ Staff Recognition
-
-Registered staff members are identified separately and excluded from customer analytics.
-
-✅ Customer Tracking
-
-Unregistered customers are automatically assigned unique IDs and tracked during future visits.
-
-✅ Age Estimation
-
-Predicts customer age using InsightFace age-gender model.
-
-✅ Customer Analytics
-
-Generates insights such as:
-
-Most frequent age group
+Analytics Generated
 Repeat customer count
-Total customer visits
-Peak customer timings
-🧠 System Workflow
-ENTRY/EXIT CAMERA
-        ↓
-Face Detection
-        ↓
-Embedding Generation
-        ↓
-Check Staff Database
-        ↓
-IF STAFF
-    → Ignore Customer Analytics
-
-ELSE
-    ↓
-Check Customer Database
-    ↓
-IF EXISTING CUSTOMER
-    → Update Visit Count
-
-ELSE
-    → Create New Customer ID
-
-        ↓
-Age Prediction
-        ↓
-Store Data in Database
-        ↓
-Generate Analytics
-🏗️ Technologies Used
-Category	Technology
-Programming Language	Python
-Face Detection	RetinaFace
-Face Recognition	InsightFace ArcFace
-Computer Vision	OpenCV
-Database	SQLite
-Numerical Operations	NumPy
-Realtime Inference	ONNX Runtime
-📂 Project Structure
-FaceRecognitionProject/
-│
-├── database/
-│   └── customers.db
-│
-├── datasets/
-│
-├── logs/
-│
-├── models/
-│
-├── src/
-│   ├── main.py
-│   ├── detect_face.py
-│   ├── recognize_face.py
-│   ├── register_staff.py
-│   ├── customer_match.py
-│   ├── analytics.py
-│   └── database.py
-│
-├── requirements.txt
-│
-└── README.md
-🗄️ Database Design
-Staff Table
-
-Stores registered shop employees.
-
-CREATE TABLE IF NOT EXISTS staff(
-    staff_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    role TEXT,
-    embedding BLOB
-);
-Customers Table
-
-Stores customer information and visit history.
-
-CREATE TABLE IF NOT EXISTS customers(
-    customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    age INTEGER,
-    gender TEXT,
-    visit_count INTEGER,
-    embedding BLOB,
-    last_seen TEXT
-);
-🔍 How Face Recognition Works
-
-The system does not store images directly for recognition.
-
-Instead:
-
-Face is converted into embeddings (numerical vectors)
-Embeddings are compared using similarity metrics
-If similarity exceeds threshold:
-Same person detected
-Otherwise:
-New customer created
-👨‍💼 Staff vs Customer Logic
-Staff Members
-Registered manually
-Stored in staff database
-Excluded from customer analytics
-Customers
-Unregistered by default
-Automatically assigned customer IDs
-Visit history tracked
-📊 Analytics Generated
-Repeat customers
-Most common age group
-Customer visit count
+Most common customer age group
+Customer visit frequency
 Daily customer statistics
-Peak shopping hours
+Returning vs new customer analysis
