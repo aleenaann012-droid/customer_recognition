@@ -2,68 +2,125 @@ import cv2
 import sqlite3
 import numpy as np
 from insightface.app import FaceAnalysis
+import threading
+# ==========================================
+# LOAD INSIGHTFACE MODEL
+# ==========================================
 
-# Load InsightFace model
 app = FaceAnalysis(name='buffalo_l')
-app.prepare(ctx_id=0)
 
-# Connect database
+# CPU MODE
+app.prepare(ctx_id=-1)
+# ==========================================
+# SHARED VARIABLES
+# ==========================================
+
+frame = None
+display_frame = None
+detected_faces = []
+
+# ==========================================
+# CONNECT DATABASE
+# ==========================================
+
 conn = sqlite3.connect("database/customers.db")
 cursor = conn.cursor()
 
-# Input staff details
+# ==========================================
+# INPUT STAFF DETAILS
+# ==========================================
+
 name = input("Enter Staff Name: ")
 role = input("Enter Staff Role: ")
+cursor.execute("""
+SELECT * FROM staff
+WHERE name = ?
+""", (name,))
 
-# Open webcam
-cap = cv2.VideoCapture(0)
+existing_staff = cursor.fetchone()
 
-saved = False
+if existing_staff:
 
-while True:
-    ret, frame = cap.read()
+    print("Staff already exists")
 
-    if not ret:
-        break
+    conn.close()
 
-    faces = app.get(frame)
+    exit()
 
-    for face in faces:
+# ==========================================
+# CHECK IF STAFF ALREADY EXISTS
+# ==========================================
 
-        # Get embedding
-        embedding = face.embedding
+cursor.execute("""
+SELECT * FROM staff
+WHERE name = ?
+""", (name,))
 
-        # Convert embedding to binary
-        embedding_blob = embedding.tobytes()
+existing_staff = cursor.fetchone()
 
-        # Save into database
-        cursor.execute("""
-        INSERT INTO staff(name, role, embedding)
-        VALUES (?, ?, ?)
-        """, (name, role, embedding_blob))
+if existing_staff:
 
-        conn.commit()
+    print("Staff already registered")
 
-        saved = True
+else:
 
-        cv2.putText(frame, "Staff Registered",
-                    (50, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    (0, 255, 0),
-                    2)
+    # ==========================================
+    # OPEN WEBCAM
+    # ==========================================
 
-    cv2.imshow("Register Staff", frame)
+    cap = cv2.VideoCapture(0)
 
-    if saved:
-        cv2.waitKey(2000)
-        break
+    saved = False
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    print("Look at camera to register...")
 
-cap.release()
+    while True:
+
+        ret, frame = cap.read()
+
+        if not ret:
+            break
+
+        faces = app.get(frame)
+
+        for face in faces:
+
+            # Get embedding
+            embedding = face.embedding.astype(np.float32)
+
+            # Convert embedding to binary
+            embedding_blob = embedding.tobytes()
+
+            # Save into database
+            cursor.execute("""
+            INSERT INTO staff(name, role, embedding)
+            VALUES (?, ?, ?)
+            """, (name, role, embedding_blob))
+
+            conn.commit()
+
+            print("Staff registered successfully")
+
+            saved = True
+
+            break
+
+        cv2.imshow("Register Staff", frame)
+
+        # Exit after successful save
+        if saved:
+            cv2.waitKey(2000)
+            break
+
+        # Press q to quit
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+# ==========================================
+# CLOSE DATABASE
+# ==========================================
+
 conn.close()
-cv2.destroyAllWindows()
-
-print("Staff registered successfully")
