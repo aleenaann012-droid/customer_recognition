@@ -7,7 +7,6 @@ import threading
 import time
 import queue
 import os
-from tracker import create_tracker
 # ==========================================
 # CONFIGURATION
 # ==========================================
@@ -15,7 +14,6 @@ from tracker import create_tracker
 SMOOTH_ALPHA   = 0.8  # 0.0 = smoothest box movement, 1.0 = instant snap
 MAX_MATCH_DIST = 100   
 TRACK_TIMEOUT  = 0.5
-
 
 # ==========================================
 # LOAD MODELS & DATABASE
@@ -44,46 +42,25 @@ conn.close()
 frame_queue = queue.Queue(maxsize=1)
 det_queue   = queue.Queue(maxsize=1)
 
-draw_results  = []
+draw_results  = []   # list of {box, text} for the main loop to render
 results_lock  = threading.Lock()
-new_recognitions_flag = False
 
-active_tracks = {}
+active_tracks = {}   # track_id → {box, text, last_seen}
 next_track_id = 0
-frame_counter = 0
 
 # ==========================================
 # DETECTION THREAD
 # — Only runs InsightFace, no matching logic
 # ==========================================
- 
+
 def detection_thread():
-    global frame_counter
-
     while True:
-
         try:
             frame = frame_queue.get(timeout=1.0)
         except queue.Empty:
             continue
 
-        frame_counter += 1
-
-        if frame_counter % 3 != 0:
-            continue
-
-        small_frame = cv2.resize(frame, (320, 240))
-
-        faces = app.get(small_frame)
-
-        scale_x = frame.shape[1] / 320
-        scale_y = frame.shape[0] / 240
-
-        for face in faces:
-            face.bbox[0] *= scale_x
-            face.bbox[1] *= scale_y
-            face.bbox[2] *= scale_x
-            face.bbox[3] *= scale_y
+        faces = app.get(frame)
 
         # Always push the latest result, drop stale one if needed
         try:
@@ -178,13 +155,11 @@ def recognition_thread():
                     if current_time - d["last_seen"] > TRACK_TIMEOUT]:
             del active_tracks[tid]
 
-        temp = [{"track_id": tid, "box": d["box"], "text": d["text"]}
-                for tid, d in active_tracks.items()]
+        temp = [{"box": d["box"], "text": d["text"]}
+                for d in active_tracks.values()]
 
         with results_lock:
-            global draw_results, new_recognitions_flag
             draw_results = temp
-            new_recognitions_flag = True
 
 # ==========================================
 # START THREADS
@@ -195,7 +170,6 @@ threading.Thread(target=recognition_thread, daemon=True).start()
 
 
 cap = cv2.VideoCapture(0)
-trackers = {} # track_id -> {tracker, text, box}
 
 while True:
     ret, frame = cap.read()
@@ -203,7 +177,6 @@ while True:
         break
 
     frame = cv2.resize(frame, (640, 480))
-    display = frame.copy()
 
     try:
         if frame_queue.full():
@@ -212,56 +185,30 @@ while True:
     except queue.Full:
         pass
 
+    display = frame.copy()
+
+
     with results_lock:
-        if new_recognitions_flag:
-            current_recognitions = draw_results.copy()
-            new_recognitions_flag = False
-        else:
-            current_recognitions = None
+        for res in draw_results:
+            box  = res["box"]
+            text = res["text"]
 
-    if current_recognitions is not None:
-        new_trackers = {}
-        for rec in current_recognitions:
-            tid = rec["track_id"]
-            box = rec["box"]
-            text = rec["text"]
-            
-            tracker = create_tracker()
-            x1, y1, x2, y2 = box
-            w = max(1, x2 - x1)
-            h = max(1, y2 - y1)
-            
-            if w > 0 and h > 0:
-                tracker.init(display, (x1, y1, w, h))
-                new_trackers[tid] = {"tracker": tracker, "text": text, "box": box}
-        trackers = new_trackers
-    else:
-        for tid, data in trackers.items():
-            ok, bbox = data["tracker"].update(display)
-            if ok:
-                x, y, w, h = [int(v) for v in bbox]
-                data["box"] = [x, y, x + w, y + h]
-
-    for tid, data in trackers.items():
-        box  = data["box"]
-        text = data["text"]
-
-        cv2.rectangle(
-            display,
-            (box[0], box[1]),
-            (box[2], box[3]),
-            (0, 255, 0),
-            2,
-        )
-        cv2.putText(
-            display,
-            text,
-            (box[0], max(10, box[1] - 10)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            2,
-        )
+            cv2.rectangle(
+                display,
+                (box[0], box[1]),
+                (box[2], box[3]),
+                (0, 255, 0),
+                2,
+            )
+            cv2.putText(
+                display,
+                text,
+                (box[0], box[1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
 
     cv2.imshow("Recognition System", display)
 
