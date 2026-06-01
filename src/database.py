@@ -48,6 +48,16 @@ CREATE TABLE IF NOT EXISTS staff_attendance(
     FOREIGN KEY(staff_id) REFERENCES staff(staff_id)
 )
 """)
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS visitor_stats(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    age_group TEXT,
+    gender TEXT,
+
+    visit_time TEXT
+)
+""")
 
 conn.commit()
 conn.close()

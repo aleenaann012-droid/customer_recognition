@@ -8,6 +8,25 @@ import time
 import queue
 import os
 from tracker import create_tracker
+def get_age_group(age):
+
+    if age <= 17:
+        return "0-17"
+
+    elif age <= 25:
+        return "18-25"
+
+    elif age <= 35:
+        return "26-35"
+
+    elif age <= 45:
+        return "36-45"
+
+    elif age <= 60:
+        return "46-60"
+
+    else:
+        return "60+"
 # ==========================================
 # CONFIGURATION
 # ==========================================
@@ -25,17 +44,58 @@ app = FaceAnalysis()
 app.prepare(ctx_id=-1)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "..", "database", "customers.db")
-conn   = sqlite3.connect(DB_PATH)
+conn   = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
-cursor.execute("SELECT name, role, embedding FROM staff")
-
-staff_details    = []
+cursor.execute(
+    "SELECT staff_id, name, role, embedding FROM staff"
+)
+staff_details = []
 staff_embeddings = []
-for name, role, embedding_blob in cursor.fetchall():
-    staff_details.append({"name": name, "role": role})
-    staff_embeddings.append(np.frombuffer(embedding_blob, dtype=np.float32))
 
-conn.close()
+for staff_id, name, role, embedding_blob in cursor.fetchall():
+
+    staff_details.append({
+        "staff_id": staff_id,
+        "name": name,
+        "role": role
+    })
+
+    staff_embeddings.append(
+        np.frombuffer(
+            embedding_blob,
+            dtype=np.float32
+        )
+    )
+
+# # ==========================
+# # LOAD CUSTOMERS
+# # ==========================
+
+# customer_embeddings = []
+
+# cursor.execute("""
+# SELECT customer_id,
+#        embedding,
+#        visit_count
+# FROM customers
+# """)
+
+# for customer_id, emb_blob, visits in cursor.fetchall():
+
+#     customer_embeddings.append({
+
+#         "id": customer_id,
+
+#         "embedding": np.frombuffer(
+#             emb_blob,
+#             dtype=np.float32
+#         ),
+
+#         "visits": visits
+#     })
+# print("Staff:", len(staff_embeddings))
+# print("Customers:", len(customer_embeddings))   
+
 
 # ==========================================
 # SHARED STATE
@@ -51,6 +111,8 @@ new_recognitions_flag = False
 active_tracks = {}
 next_track_id = 0
 frame_counter = 0
+saved_tracks = set()
+staff_presence = {}
 
 # ==========================================
 # DETECTION THREAD
@@ -160,12 +222,60 @@ def recognition_thread():
             display_name = "CUSTOMER"
 
             for i, known_emb in enumerate(staff_embeddings):
-                sim = cosine_similarity(embedding, known_emb.reshape(1, -1))[0][0]
+
+                sim = cosine_similarity(
+                    embedding,
+                    known_emb.reshape(1, -1)
+                )[0][0]
+
                 if sim > 0.6:
-                    display_name = f"{staff_details[i]['name']} | {staff_details[i]['role']}"
+
+                    staff_name = staff_details[i]["name"]
+
+                    display_name = (
+                        f"{staff_details[i]['name']} | "
+                        f"{staff_details[i]['role']}"
+                    )
+
+                    if staff_name not in staff_presence:
+                        try:
+                            local_cursor = conn.cursor()
+                            local_cursor.execute(
+                                """
+                                INSERT INTO staff_attendance
+                                (staff_id, entry_time, date)
+                                VALUES
+                                (?, datetime('now'), date('now'))
+                                """,
+                                (staff_details[i]["staff_id"],)
+                            )
+                            conn.commit()
+                            staff_presence[staff_name] = True
+                        except Exception as e:
+                            print(f"Error inserting staff attendance: {e}")
+
                     break
 
-            text = f"{display_name} | {gender} | Age: {age}"
+        text = f"{display_name} | {gender} | Age: {age}"
+        if best_track_id not in saved_tracks:
+
+            age_group = get_age_group(age)
+
+            try:
+                local_cursor = conn.cursor()
+                local_cursor.execute(
+                        """
+                        INSERT INTO visitor_stats
+                        (age_group, gender)
+                        VALUES (?, ?)
+                        """,
+                        (age_group, gender)
+                    )
+                conn.commit()
+            except Exception as e:
+                print(f"Error inserting visitor stats: {e}")
+
+            saved_tracks.add(best_track_id)
 
 
             active_tracks[best_track_id] = {
@@ -176,6 +286,29 @@ def recognition_thread():
 
         for tid in [tid for tid, d in active_tracks.items()
                     if current_time - d["last_seen"] > TRACK_TIMEOUT]:
+
+            track_text = active_tracks[tid]["text"]
+
+            for staff in staff_details:
+                if staff["name"] in track_text:
+                    try:
+                        local_cursor = conn.cursor()
+                        local_cursor.execute(
+                            """
+                            UPDATE staff_attendance
+                            SET exit_time = datetime('now')
+                            WHERE staff_id = ?
+                            AND exit_time IS NULL
+                            """,
+                            (staff["staff_id"],)
+                        )
+                        conn.commit()
+
+                        if staff["name"] in staff_presence:
+                            del staff_presence[staff["name"]]
+                    except Exception as e:
+                        print(f"Error updating staff exit time: {e}")
+
             del active_tracks[tid]
 
         temp = [{"track_id": tid, "box": d["box"], "text": d["text"]}
