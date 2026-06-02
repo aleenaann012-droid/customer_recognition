@@ -256,27 +256,26 @@ def recognition_thread():
 
                     break
 
-        text = f"{display_name} | {gender} | Age: {age}"
-        if best_track_id not in saved_tracks:
+            text = f"{display_name} | {gender} | Age: {age}"
+            if best_track_id not in saved_tracks:
 
-            age_group = get_age_group(age)
+                age_group = get_age_group(age)
 
-            try:
-                local_cursor = conn.cursor()
-                local_cursor.execute(
-                        """
-                        INSERT INTO visitor_stats
-                        (age_group, gender)
-                        VALUES (?, ?)
-                        """,
-                        (age_group, gender)
-                    )
-                conn.commit()
-            except Exception as e:
-                print(f"Error inserting visitor stats: {e}")
+                try:
+                    local_cursor = conn.cursor()
+                    local_cursor.execute(
+                            """
+                            INSERT INTO visitor_stats
+                            (age_group, gender)
+                            VALUES (?, ?)
+                            """,
+                            (age_group, gender)
+                        )
+                    conn.commit()
+                except Exception as e:
+                    print(f"Error inserting visitor stats: {e}")
 
-            saved_tracks.add(best_track_id)
-
+                saved_tracks.add(best_track_id)
 
             active_tracks[best_track_id] = {
                 "box":       final_box,
