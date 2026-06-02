@@ -113,18 +113,13 @@ next_track_id = 0
 frame_counter = 0
 saved_tracks = set()
 staff_presence = {}
-
-# ==========================================
-# DETECTION THREAD
-# — Only runs InsightFace, no matching logic
-# ==========================================
  
 def detection_thread():
     global frame_counter
 
     while True:
 
-        try:
+         try:
             frame = frame_queue.get(timeout=1.0)
         except queue.Empty:
             continue
@@ -154,10 +149,6 @@ def detection_thread():
             det_queue.put_nowait(faces)
         except queue.Full:
             pass
-
-# ==========================================
-# RECOGNITION THREAD
-# ==========================================
 
 def recognition_thread():
     global draw_results, active_tracks, next_track_id
@@ -228,7 +219,7 @@ def recognition_thread():
                     known_emb.reshape(1, -1)
                 )[0][0]
 
-                if sim > 0.6:
+                if sim > 0.3:
 
                     staff_name = staff_details[i]["name"]
 
@@ -318,15 +309,11 @@ def recognition_thread():
             draw_results = temp
             new_recognitions_flag = True
 
-# ==========================================
-# START THREADS
-# ==========================================
-
 threading.Thread(target=detection_thread,   daemon=True).start()
 threading.Thread(target=recognition_thread, daemon=True).start()
 
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("PRIVATE_URL")
 trackers = {} # track_id -> {tracker, text, box}
 
 while True:

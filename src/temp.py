@@ -292,8 +292,9 @@ class IdentityCache:
 
 # ─── REGISTER mode ────────────────────────────────────────────────────────────
 
-def register_face(name: str, db_path: str = EMBEDDINGS_FILE, camera_id: int = 0):
+def register_face(name: str, db_path: str = EMBEDDINGS_FILE):
     db  = load_db(db_path)
+    camera_id = "PRIVATE_URL"
     cap = cv2.VideoCapture(camera_id)
     if not cap.isOpened():
         sys.exit(f"[ERROR] Cannot open camera {camera_id}")
@@ -409,8 +410,7 @@ def _recog_worker(state: RecogState, db: dict, threshold: float):
 
 def match_faces(
     db_path:   str   = EMBEDDINGS_FILE,
-    threshold: float = MATCH_THRESHOLD,
-    camera_id: int   = 0,
+    threshold: float = MATCH_THRESHOLD
 ):
     db = load_db(db_path)
     if not db:
@@ -423,6 +423,7 @@ def match_faces(
     get_mediapipe()
     get_insightface()
 
+    camera_id = "PRIVATE_URL"
     cap = cv2.VideoCapture(camera_id)
     if not cap.isOpened():
         sys.exit(f"[ERROR] Cannot open camera {camera_id}")
@@ -542,7 +543,7 @@ Examples:
     mat = sub.add_parser("match")
     mat.add_argument("--db",        default=EMBEDDINGS_FILE)
     mat.add_argument("--threshold", type=float, default=MATCH_THRESHOLD)
-    mat.add_argument("--camera",    type=int, default=0)
+   # mat.add_argument("--camera",    type=int, default=0)
 
     lst = sub.add_parser("list")
     lst.add_argument("--db", default=EMBEDDINGS_FILE)
@@ -556,9 +557,9 @@ Examples:
 def main():
     args = build_parser().parse_args()
     if args.mode == "register":
-        register_face(args.name, db_path=args.db, camera_id=args.camera)
+        register_face(args.name, db_path=args.db)  #  ,camera_id=args.camera
     elif args.mode == "match":
-        match_faces(db_path=args.db, threshold=args.threshold, camera_id=args.camera)
+        match_faces(db_path=args.db, threshold=args.threshold) # , camera_id=args.camera
     elif args.mode == "list":
         list_faces(args.db)
     elif args.mode == "delete":

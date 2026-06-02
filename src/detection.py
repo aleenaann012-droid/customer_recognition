@@ -144,7 +144,7 @@ threading.Thread(target=tracking_thread,  daemon=True).start()
 # MAIN LOOP
 # ==========================================
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("PRIVATE_URL")
 
 while True:
     ret, frame = cap.read()
