@@ -119,7 +119,7 @@ def detection_thread():
 
     while True:
 
-         try:
+        try:
             frame = frame_queue.get(timeout=1.0)
         except queue.Empty:
             continue
