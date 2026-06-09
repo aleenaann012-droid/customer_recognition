@@ -1,0 +1,17 @@
+# Database files
+database/customers.db
+database/customer.db
+
+# Embedding files
+database/staff_embeddings.json
+database/face_embeddings.json
+
+# Any embedding files anywhere in project
+*embedding*.json
+*embeddings*.json
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
