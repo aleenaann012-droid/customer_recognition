@@ -7,10 +7,10 @@ import threading
 # LOAD INSIGHTFACE MODEL
 # ==========================================
 
-app = FaceAnalysis(name='buffalo_l')
+app = FaceAnalysis(name='buffalo_s')
 
 # CPU MODE
-app.prepare(ctx_id=-1)
+app.prepare(ctx_id=-1, det_thresh=0.4)
 # ==========================================
 # SHARED VARIABLES
 # ==========================================
