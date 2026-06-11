@@ -7,7 +7,7 @@
 <img src="https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white"/>
 <img src="https://img.shields.io/badge/Status-✅%20Complete-brightgreen?style=for-the-badge"/>
 <img src="https://img.shields.io/badge/Miniconda-Environment-44A833?style=for-the-badge&logo=anaconda&logoColor=white"/>
-<img src="https://img.shields.io/badge/Docker-Deployment-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
+
 
 # 🏪 AI Retail Visitor Analytics System
 
@@ -236,7 +236,7 @@ flowchart LR
 | Dashboard | Streamlit |
 | Object Tracking | FaceCentroidTracker / ByteTrack (Supervision v0.28) |
 | Environment | Miniconda |
-| Deployment | Docker |
+
 
 ---
 
@@ -318,11 +318,7 @@ customer_recognition/
 ├── state.py            # Thread-safe shared application state
 ├── main.py             # Application entry point
 ├── dashboard.py        # Streamlit analytics dashboard
-│
 ├── staff_register.py   # CLI tool for staff face enrollment
-├── Dockerfile          # Docker image definition for containerised deployment
-├── docker-compose.yml  # Multi-service orchestration (app + dashboard)
-├── environment.yml     # Miniconda environment specification
 ├── requirements.txt
 └── README.md
 ```
@@ -382,11 +378,6 @@ docker run --rm -it \
   retail-analytics
 ```
 
-Or using Docker Compose (runs both the analytics engine and Streamlit dashboard):
-
-```bash
-docker-compose up --build
-```
 
 The Streamlit dashboard will be accessible at `http://localhost:8501`.
 
@@ -501,12 +492,6 @@ git push origin feature/your-feature-name
 ```
 
 Please follow PEP 8 style conventions and include docstrings for any new modules.
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
 
 ---
 
