@@ -15,3 +15,5 @@ database/face_embeddings.json
 *.sqlite
 *.sqlite3
 
+#other
+replacement.txt

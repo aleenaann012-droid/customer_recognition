@@ -86,3 +86,53 @@ tracker = FaceCentroidTracker(
     max_disappeared=20,
     max_distance=150
 )
+
+class FaceByteTracker:
+    def __init__(self, track_activation_threshold=0.3, lost_track_buffer=30, minimum_matching_threshold=0.9, minimum_consecutive_frames=1, max_distance=150):
+        import supervision as sv
+        import warnings
+        warnings.filterwarnings("ignore", category=FutureWarning, module="supervision")
+        self.tracker = sv.ByteTrack(
+            track_activation_threshold=track_activation_threshold,
+            lost_track_buffer=lost_track_buffer,
+            minimum_matching_threshold=minimum_matching_threshold,
+            minimum_consecutive_frames=minimum_consecutive_frames
+        )
+        self.max_distance = max_distance
+
+    def update(self, faces, detections):
+        tracks = self.tracker.update_with_detections(detections)
+        tracked_ids = []
+        
+        for i_face, face in enumerate(faces):
+            matched_tid = i_face
+            best_dist = 9999
+            fx_c = (face.bbox[0] + face.bbox[2]) / 2
+            fy_c = (face.bbox[1] + face.bbox[3]) / 2
+            
+            if len(tracks) > 0:
+                for t_box, t_id in zip(tracks.xyxy, tracks.tracker_id):
+                    tx_c = (t_box[0] + t_box[2]) / 2
+                    ty_c = (t_box[1] + t_box[3]) / 2
+                    dist = ((fx_c - tx_c)**2 + (fy_c - ty_c)**2)**0.5
+                    if dist < self.max_distance and dist < best_dist:
+                        best_dist = dist
+                        matched_tid = int(t_id)
+                
+                # Fallback
+                if matched_tid == i_face:
+                    closest_tid = -1
+                    min_d = 9999
+                    for t_box, t_id in zip(tracks.xyxy, tracks.tracker_id):
+                        tx_c = (t_box[0] + t_box[2]) / 2
+                        ty_c = (t_box[1] + t_box[3]) / 2
+                        dist = ((fx_c - tx_c)**2 + (fy_c - ty_c)**2)**0.5
+                        if dist < min_d:
+                            min_d = dist
+                            closest_tid = int(t_id)
+                    if closest_tid != -1:
+                        matched_tid = closest_tid
+            
+            tracked_ids.append(matched_tid)
+            
+        return tracked_ids

@@ -14,6 +14,8 @@ TRACKER_MAX_DISAPPEARED = 30
 
 TRACKER_MAX_DISTANCE = 150
 
+TRACKER_TYPE = "centroid" # Options: "centroid" or "bytetrack"
+
 CAMERA_INDEX = 0
 
 FRAME_WIDTH = 640
