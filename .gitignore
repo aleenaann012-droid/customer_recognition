@@ -17,3 +17,5 @@ database/face_embeddings.json
 
 #other
 replacement.txt
+__pycache__/*
+database/customers.db
